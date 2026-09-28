@@ -1,11 +1,11 @@
 import tls from "tls";
 import { createPool, PoolOptions } from "mysql2/promise";
-import { LETSENCRYPT_ROOTS } from "./lib/ca";
+import { LETSENCRYPT_CERTS } from "./lib/ca";
 
 /** ค่าเชื่อมต่อฐานข้อมูล อ่านจาก .env (ดู .env.example) */
 export function dbOptions(): PoolOptions {
-  // ไม่ใส่ DB_SSL_CA = ใช้ root ที่ Node เชื่อถืออยู่แล้ว + root ของ Let's Encrypt (TiDB ใช้ตัวนี้ ดู lib/ca.ts)
-  const ca = process.env.DB_SSL_CA?.replace(/\\n/g, "\n") || [...tls.rootCertificates, ...LETSENCRYPT_ROOTS];
+  // ไม่ใส่ DB_SSL_CA = ใช้ root ที่ Node เชื่อถืออยู่แล้ว + ใบรับรองของ Let's Encrypt (TiDB ใช้ตัวนี้ ดู lib/ca.ts)
+  const ca = process.env.DB_SSL_CA?.replace(/\\n/g, "\n") || [...tls.rootCertificates, ...LETSENCRYPT_CERTS];
   const useSsl = process.env.DB_SSL === "true" || !!process.env.DB_SSL_CA;
   return {
     host: process.env.DB_HOST ?? "localhost",
