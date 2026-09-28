@@ -1,0 +1,26 @@
+{
+  "name": "project-adweb-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web API ระบบจัดเส้นทางและแบ่งงานไรเดอร์ (Express + TypeScript + MySQL)",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:init": "tsx scripts/init-db.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.13.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
