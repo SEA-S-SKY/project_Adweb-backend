@@ -44,7 +44,7 @@ project_Adweb-backend/
 ├── config.ts            ค่าคงที่ทั้งระบบ (ราคา, รัศมี, เวลา, สีไรเดอร์)
 ├── controller/          config.ts, customers.ts, orders.ts
 ├── model/               interface + ตัวแปลง snake_case → camelCase + ตัวตรวจ body
-├── lib/                 http.ts (รูปแบบ error กลาง), validate.ts, format.ts
+├── lib/                 http.ts (รูปแบบ error กลาง), validate.ts, format.ts, ca.ts (ใบรับรอง Let's Encrypt)
 ├── service/distance.ts  haversine
 ├── scripts/init-db.ts   รัน sql/schema.sql
 ├── sql/schema.sql       CREATE TABLE ทั้งหมด + ลูกค้าตัวอย่าง
@@ -128,4 +128,5 @@ Vercel รัน Express เป็น serverless function ให้เอง โ
 > - แก้ Environment Variables แล้ว**ต้อง Redeploy** (แท็บ Deployments → ⋯ → Redeploy) ค่าใหม่ถึงจะมีผล
 > - ดู error ตอนรันได้ที่แท็บ **Logs** ของโปรเจกต์
 > - TiDB บังคับเชื่อมต่อแบบ TLS ถ้าลืมใส่ `DB_SSL=true` จะเชื่อมต่อไม่ได้
+> - ถ้าเจอ `unable to get local issuer certificate` แปลว่า Node ไม่รู้จักใบรับรองของ TiDB (สาย Let's Encrypt YE1 → Root YE) root ที่ต้องใช้แนบไว้ใน `lib/ca.ts` แล้ว ห้ามลบ
 > - TiDB ยังไม่รองรับฟังก์ชัน spatial (`ST_Distance_Sphere`, `POINT`) การคำนวณระยะจึงใช้ `haversineSql()` ใน `service/distance.ts` ห้ามเปลี่ยนกลับ
