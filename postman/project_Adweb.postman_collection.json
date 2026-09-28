@@ -1,0 +1,503 @@
+{
+  "info": {
+    "name": "project_Adweb API (HW-5)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "ทุก endpoint ของ HW-5 · แก้ตัวแปร baseUrl เป็น URL ของ Render หลัง deploy"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "date",
+      "value": "2026-09-18"
+    },
+    {
+      "key": "customerId",
+      "value": "1"
+    },
+    {
+      "key": "orderId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Config",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/config",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "config"
+          ]
+        },
+        "description": ""
+      }
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "แสดงลูกค้าทุกคน (2.1)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ค้นจากส่วนหนึ่งของชื่อ/นามสกุล (2.2)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers?search=สม",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "สม"
+                }
+              ]
+            },
+            "description": "ค้นใน first_name, last_name, ชื่อเต็ม และเบอร์"
+          }
+        },
+        {
+          "name": "ค้นแยกชื่อ + นามสกุล (2.2)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers?firstName=สม&lastName=ใจ",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "firstName",
+                  "value": "สม"
+                },
+                {
+                  "key": "lastName",
+                  "value": "ใจ"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ลูกค้าในระยะ 1 กม. (2.3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/nearby?lat=16.2458&lng=103.25&radiusKm=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "nearby"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "16.2458"
+                },
+                {
+                  "key": "lng",
+                  "value": "103.25"
+                },
+                {
+                  "key": "radiusKm",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ลูกค้า 1 คน",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "เพิ่มลูกค้า (2.1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"สมชาย\",\n  \"lastName\": \"ทดสอบ\",\n  \"phone\": \"0812345678\",\n  \"address\": \"หอพัก A ห้อง 204\",\n  \"lat\": 16.2471,\n  \"lng\": 103.2519\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "แก้ไขลูกค้า (2.1)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"สมชาย\",\n  \"lastName\": \"ใจดี\",\n  \"phone\": \"0899999999\",\n  \"address\": \"หอพัก B ห้อง 101\",\n  \"lat\": 16.2471,\n  \"lng\": 103.2519\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "ลบลูกค้า (2.1)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "description": "ลบไม่ได้ (409) ถ้าลูกค้ายังมีออเดอร์"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "จำลองออเดอร์ 20–30 รายการ (3.1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/simulate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "simulate"
+              ]
+            },
+            "description": "ไม่ส่ง count = สุ่ม 20–30",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderDate\": \"{{date}}\",\n  \"replaceExisting\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "ออเดอร์ของวัน",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders?date={{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{date}}"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "สรุปยอดของวัน",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/summary?date={{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{date}}"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ออเดอร์ในระยะ 2 กม. (3.3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/nearby?lat=16.2458&lng=103.25&radiusKm=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "nearby"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "16.2458"
+                },
+                {
+                  "key": "lng",
+                  "value": "103.25"
+                },
+                {
+                  "key": "radiusKm",
+                  "value": "2"
+                }
+              ]
+            },
+            "description": "ไม่ส่ง date = ทุกวัน"
+          }
+        },
+        {
+          "name": "ออเดอร์ 1 รายการ",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "เพิ่มออเดอร์ (3.1.3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": 1,\n  \"quantity\": 2,\n  \"orderDate\": \"{{date}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "แก้จำนวนกล่อง (3.1.3)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "ลบออเดอร์ (3.1.3)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ลบออเดอร์ที่รอจัดของวัน",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders?date={{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{date}}"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ล้างข้อมูลจำลองทั้งหมด (3.2)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "all"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    }
+  ]
+}
