@@ -7,7 +7,7 @@ import { errorHandler, notFoundHandler } from "./lib/http";
 
 export const app = express();
 
-// CORS_ORIGINS คั่นด้วยจุลภาค เช่น "http://localhost:4200,https://adweb.onrender.com" หรือ "*" = อนุญาตทุกที่
+// CORS_ORIGINS คั่นด้วยจุลภาค เช่น "http://localhost:4200,https://project-adweb.vercel.app" หรือ "*" = อนุญาตทุกที่
 const origins = (process.env.CORS_ORIGINS ?? "http://localhost:4200")
   .split(",")
   .map((o) => o.trim())
@@ -34,3 +34,6 @@ app.use("/api/orders", orders);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+// Vercel หาไฟล์ app.ts แล้วใช้ default export เป็น serverless function (ไม่ได้รัน server.ts)
+export default app;

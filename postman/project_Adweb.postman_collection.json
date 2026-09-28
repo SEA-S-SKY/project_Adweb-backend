@@ -2,7 +2,7 @@
   "info": {
     "name": "project_Adweb API (HW-5)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "ทุก endpoint ของ HW-5 · แก้ตัวแปร baseUrl เป็น URL ของ Render หลัง deploy"
+    "description": "ทุก endpoint ของ HW-5 · แก้ตัวแปร baseUrl เป็น URL ของ Vercel หลัง deploy"
   },
   "variable": [
     {

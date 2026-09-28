@@ -31,7 +31,7 @@ npm run dev       # เปิด server ที่ http://localhost:3000 รี�
 |---|---|
 | `npm run dev` | รันแบบพัฒนา (`tsx watch`) |
 | `npm run build` | คอมไพล์เป็น JavaScript ลง `dist/` |
-| `npm start` | รันตัวที่คอมไพล์แล้ว (ใช้บน Render) |
+| `npm start` | รันตัวที่คอมไพล์แล้วในเครื่อง (บน Vercel ไม่ได้ใช้) |
 | `npm run db:init` | สร้างตารางใหม่ทั้งหมดจาก `sql/schema.sql` |
 
 ## โครงสร้างไฟล์
@@ -79,11 +79,11 @@ project_Adweb-backend/
 
 Import ไฟล์ `postman/project_Adweb.postman_collection.json` แล้วแก้ตัวแปร `baseUrl` ของ collection
 - ในเครื่อง: `http://localhost:3000/api`
-- หลัง deploy: `https://<ชื่อ-service>.onrender.com/api`
+- หลัง deploy: `https://<ชื่อโปรเจกต์>.vercel.app/api`
 
 ## Deploy (HW-5 ข้อ 4)
 
-ฐานข้อมูลใช้ **TiDB Cloud Starter** (ฟรี, ต่อแบบ MySQL) และ backend ขึ้น **Render**
+ฐานข้อมูลใช้ **TiDB Cloud Starter** (ฟรี, ต่อแบบ MySQL) และ backend ขึ้น **Vercel** (ฟรี, แพ็กเกจ Hobby)
 
 ### 1. สร้างฐานข้อมูลบน TiDB Cloud
 1. สมัครที่ [tidbcloud.com](https://tidbcloud.com) แล้วสร้าง instance แบบ **Starter** (ฟรี) เลือก region **Singapore (ap-southeast-1)** เพราะใกล้ไทยที่สุด
@@ -106,20 +106,26 @@ DB_SSL=true
 แล้วรัน `npm run db:init` ต้องขึ้น `เสร็จแล้ว มีลูกค้า 30 คน` (ฐานข้อมูล `adweb` ถูกสร้างให้อัตโนมัติ)
 จากนั้นลอง `npm run dev` แล้วเปิด http://localhost:3000/api/customers ถ้าเห็นลูกค้า 30 คน แปลว่า backend ในเครื่องต่อ TiDB ได้แล้ว
 
-### 3. Backend บน Render
-1. [render.com](https://render.com) → New → **Web Service** → เลือก repo `project_Adweb-backend` แบบ Free
-2. ตั้งค่า
+### 3. Backend บน Vercel
+Vercel รัน Express เป็น serverless function ให้เอง โดยหยิบ `export default app` จาก `app.ts` (ไม่ได้รัน `server.ts`) และ `vercel.json` ตั้ง region เป็น `sin1` (สิงคโปร์) ให้อยู่ที่เดียวกับ TiDB
 
-| ช่อง | ค่า |
+1. สมัคร/ล็อกอิน [vercel.com](https://vercel.com) ด้วยบัญชี GitHub (แพ็กเกจ **Hobby** ฟรี)
+2. **Add New… → Project** → Import repo `project_Adweb-backend` (ถ้าไม่เห็น repo ให้กด *Adjust GitHub App Permissions* แล้วอนุญาต repo นี้)
+3. หน้าตั้งค่า: Framework Preset ต้องขึ้น **Express** ช่องอื่นปล่อยค่าเดิม
+4. เปิด **Environment Variables** แล้วใส่
+
+| Key | Value |
 |---|---|
-| Root Directory | (เว้นว่าง) |
-| Build Command | `npm install && npm run build` |
-| Start Command | `npm start` |
+| `DB_HOST` `DB_PORT` `DB_USER` `DB_PASSWORD` `DB_NAME` `DB_SSL` | ค่าเดียวกับข้อ 2 |
+| `CORS_ORIGINS` | ช่วงแรกใส่ `*` พอ frontend deploy แล้วค่อยเปลี่ยนเป็น URL ของ frontend |
 
-3. Environment Variables: ใส่ `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL` ค่าเดียวกับข้อ 2 และ `CORS_ORIGINS` (ช่วงแรกใส่ `*` ได้ พอ frontend deploy แล้วค่อยเปลี่ยนเป็น URL ของ frontend)
-4. กด Deploy แล้วลองเปิด `https://<ชื่อ-service>.onrender.com/api/customers`
+5. กด **Deploy** เสร็จแล้วลองเปิด `https://<ชื่อโปรเจกต์>.vercel.app/api/customers` ต้องเห็นลูกค้า 30 คน
+
+หลังจากนี้ทุกครั้งที่ merge เข้า `master` Vercel จะ deploy ใหม่ให้เอง ส่วน branch อื่นจะได้ URL ทดลอง (Preview) แยกไว้
 
 > [!NOTE]
-> - Render แพ็กเกจฟรีจะหลับเมื่อไม่มีคนใช้ 15 นาที request แรกหลังหลับอาจใช้เวลาเกือบ 1 นาที ก่อนส่งงานให้เปิด URL ปลุกไว้ก่อน
+> - **URL ที่ส่งอาจารย์ให้ใช้ตัวในหัวข้อ Domains** (`<ชื่อโปรเจกต์>.vercel.app`) ห้ามใช้ URL ยาว ๆ ที่มีรหัสสุ่มต่อท้าย เพราะ URL แบบนั้นถูกล็อกไว้ให้เฉพาะคนที่ล็อกอิน Vercel ของทีม
+> - แก้ Environment Variables แล้ว**ต้อง Redeploy** (แท็บ Deployments → ⋯ → Redeploy) ค่าใหม่ถึงจะมีผล
+> - ดู error ตอนรันได้ที่แท็บ **Logs** ของโปรเจกต์
 > - TiDB บังคับเชื่อมต่อแบบ TLS ถ้าลืมใส่ `DB_SSL=true` จะเชื่อมต่อไม่ได้
 > - TiDB ยังไม่รองรับฟังก์ชัน spatial (`ST_Distance_Sphere`, `POINT`) การคำนวณระยะจึงใช้ `haversineSql()` ใน `service/distance.ts` ห้ามเปลี่ยนกลับ
