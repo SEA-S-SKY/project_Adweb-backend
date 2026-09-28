@@ -2,7 +2,7 @@ import "dotenv/config";
 import http from "http";
 import { app } from "./app";
 
-// Render ส่งพอร์ตมาทาง PORT (ตัวพิมพ์ใหญ่)
+// ใช้ตอนรันในเครื่อง (npm run dev / npm start) บน Vercel ไม่ได้ใช้ไฟล์นี้ แต่ใช้ default export ของ app.ts แทน
 const port = process.env.PORT || 3000;
 const server = http.createServer(app);
 
