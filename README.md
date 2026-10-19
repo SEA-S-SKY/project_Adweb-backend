@@ -5,7 +5,11 @@ backend ของ [project_Adweb](https://github.com/SEA-S-SKY/project_Adweb) (f
 
 สัญญาของทุก endpoint อยู่ใน [API.md](https://github.com/SEA-S-SKY/project_Adweb/blob/master/API.md) ของ repo frontend ส่วนตารางฐานข้อมูลอยู่ใน [docs/er-diagram.md](https://github.com/SEA-S-SKY/project_Adweb/blob/master/docs/er-diagram.md) **ถ้าจะเปลี่ยน API ให้แก้ API.md ใน repo frontend ก่อน**
 
-ตอนนี้ทำครบทุกข้อของ **HW-5** แล้ว (config, ลูกค้า, ออเดอร์) ส่วน `/api/plans` และ `/api/jobs` ยังไม่ได้ทำ
+ตอนนี้ทำครบทุกข้อของ **HW-5** แล้ว (config, ลูกค้า, ออเดอร์) และมี `/api/plans` (จัดเส้นทาง) `/api/jobs` (ใบงานไรเดอร์) `/api/events` (แจ้งเตือนข้ามเครื่อง) แล้ว รายละเอียดอยู่ใน [docs/PLANS_JOBS_EVENTS.md](docs/PLANS_JOBS_EVENTS.md)
+
+> [!IMPORTANT]
+> อัลกอริทึมจัดเส้นทางและการเก็บใบงานอยู่ที่ backend นี้ที่เดียว ฝั่ง frontend ไม่ต้องคำนวณเองหรือมีฐานข้อมูลของตัวเองแล้ว
+> สิ่งที่ฝั่ง frontend ต้องแก้ดูที่ [docs/FRONTEND_MIGRATION.md](docs/FRONTEND_MIGRATION.md)
 
 ## เริ่มต้นใช้งานในเครื่อง
 
@@ -21,7 +25,7 @@ cp .env.example .env        # Windows: copy .env.example .env แล้วแก
 แก้ `DB_USER` / `DB_PASSWORD` ใน `.env` ให้ตรงกับ MySQL ในเครื่อง แล้วรัน
 
 ```bash
-npm run db:init   # สร้างฐานข้อมูล adweb (ถ้ายังไม่มี) + 5 ตาราง + ลูกค้าตัวอย่าง 30 คน (⚠️ ลบข้อมูลเดิมในตารางทิ้งทั้งหมด)
+npm run db:init   # สร้างฐานข้อมูล adweb (ถ้ายังไม่มี) + 6 ตาราง + ลูกค้าตัวอย่าง 30 คน (⚠️ ลบข้อมูลเดิมในตารางทิ้งทั้งหมด)
 npm run dev       # เปิด server ที่ http://localhost:3000 รีสตาร์ตเองเมื่อเซฟไฟล์
 ```
 
@@ -32,7 +36,12 @@ npm run dev       # เปิด server ที่ http://localhost:3000 รี�
 | `npm run dev` | รันแบบพัฒนา (`tsx watch`) |
 | `npm run build` | คอมไพล์เป็น JavaScript ลง `dist/` |
 | `npm start` | รันตัวที่คอมไพล์แล้วในเครื่อง (บน Vercel ไม่ได้ใช้) |
-| `npm run db:init` | สร้างตารางใหม่ทั้งหมดจาก `sql/schema.sql` |
+| `npm run db:init` | สร้างตารางใหม่ทั้งหมดจาก `sql/schema.sql` (⚠️ ลบข้อมูลเดิม) |
+| `npm run db:migrate` | เพิ่มตารางที่ยังไม่มี (เช่น `events`) **โดยไม่ลบข้อมูลเดิม** ใช้กับฐานข้อมูลที่มีอยู่แล้ว รันซ้ำได้ |
+| `npm run db:clear-date -- 2099-12-31` | ลบออเดอร์ แผน ใบงาน และ event ของวันเดียว (ใช้ล้างวันที่ทดสอบ) |
+| `npm test` | unit test สูตรต้นทุนและอัลกอริทึมจัดเส้นทาง (ไม่ต่อฐานข้อมูล) |
+| `npm run test:rider-workflow` | จำลองไรเดอร์ทุกคนวิ่งงานพร้อมกันบนวันที่ทดสอบ (ต้องเปิด server ก่อน ดูหัวไฟล์) |
+| `npm run test:rider-capacity` | เพิ่มผู้ใช้พร้อมกันทีละขั้นจน error/latency เกินเกณฑ์ (ดูหัวไฟล์) |
 
 ## โครงสร้างไฟล์
 
@@ -42,12 +51,17 @@ project_Adweb-backend/
 ├── app.ts               CORS, JSON parser, ผูก router ใต้ /api, จัดการ error
 ├── dbconnect.ts         connection pool (ตั้ง time_zone เป็น +07:00 ให้ทุก connection)
 ├── config.ts            ค่าคงที่ทั้งระบบ (ราคา, รัศมี, เวลา, สีไรเดอร์)
-├── controller/          config.ts, customers.ts, orders.ts
+├── controller/          config, customers, orders, plans, jobs, events
 ├── model/               interface + ตัวแปลง snake_case → camelCase + ตัวตรวจ body
-├── lib/                 http.ts (รูปแบบ error กลาง), validate.ts, format.ts, ca.ts (ใบรับรอง Let's Encrypt)
-├── service/distance.ts  haversine
-├── scripts/init-db.ts   รัน sql/schema.sql
+├── lib/                 http.ts (รูปแบบ error กลาง), validate.ts, format.ts, db.ts (transaction), ca.ts (ใบรับรอง Let's Encrypt)
+├── service/
+│   ├── distance.ts      haversine
+│   ├── osrm.ts          ระยะทางและเส้นทางตามถนนจริงจาก OSRM
+│   ├── routing.ts       อัลกอริทึมจัดเส้นทางและแบ่งงานไรเดอร์
+│   └── costing.ts       สูตรต้นทุน กำไร และคำเตือน
+├── scripts/             init-db.ts, migrate.ts, clear-date.ts, load test ไรเดอร์ 2 ตัว
 ├── sql/schema.sql       CREATE TABLE ทั้งหมด + ลูกค้าตัวอย่าง
+├── test/                unit test (node:test)
 └── postman/             collection สำหรับทดสอบทุกเส้น
 ```
 
@@ -76,6 +90,15 @@ project_Adweb-backend/
 | POST | `/api/orders/simulate` | 3.1 |
 | DELETE | `/api/orders?date=` | |
 | DELETE | `/api/orders/all` | 3.2 |
+| POST | `/api/plans` | จัดเส้นทาง / คำนวณใหม่ |
+| GET | `/api/plans/latest?date=` | |
+| GET | `/api/plans/:id` | |
+| POST | `/api/plans/:id/confirm` | ยืนยันแผน + สร้างใบงาน |
+| GET | `/api/jobs?date=` | |
+| GET | `/api/jobs/:jobNo` | หน้าไรเดอร์ |
+| PATCH | `/api/jobs/:jobNo/stops/:seq` | ไรเดอร์กดส่งแล้ว |
+| GET | `/api/events?since=` | แจ้งเตือนข้ามเครื่อง |
+| POST | `/api/events` | |
 
 ## ทดสอบด้วย Postman
 
@@ -120,6 +143,7 @@ Vercel รัน Express เป็น serverless function ให้เอง โ
 |---|---|
 | `DB_HOST` `DB_PORT` `DB_USER` `DB_PASSWORD` `DB_NAME` `DB_SSL` | ค่าเดียวกับข้อ 2 |
 | `CORS_ORIGINS` | ช่วงแรกใส่ `*` พอ frontend deploy แล้วค่อยเปลี่ยนเป็น URL ของ frontend |
+| `OSRM_URL` | ไม่ต้องใส่ก็ได้ (ค่าเริ่มต้น `https://router.project-osrm.org`) ใส่เมื่อมี OSRM ของตัวเอง |
 
 5. กด **Deploy** เสร็จแล้วลองเปิด `https://<ชื่อโปรเจกต์>.vercel.app/api/customers` ต้องเห็นลูกค้า 30 คน
 
@@ -132,3 +156,4 @@ Vercel รัน Express เป็น serverless function ให้เอง โ
 > - TiDB บังคับเชื่อมต่อแบบ TLS ถ้าลืมใส่ `DB_SSL=true` จะเชื่อมต่อไม่ได้
 > - ถ้าเจอ `unable to get local issuer certificate` แปลว่า Node ไม่รู้จักใบรับรองของ TiDB (สาย Let's Encrypt YE1 → Root YE) root ที่ต้องใช้แนบไว้ใน `lib/ca.ts` แล้ว ห้ามลบ
 > - TiDB ยังไม่รองรับฟังก์ชัน spatial (`ST_Distance_Sphere`, `POINT`) การคำนวณระยะจึงใช้ `haversineSql()` ใน `service/distance.ts` ห้ามเปลี่ยนกลับ
+> - เพิ่มตารางใหม่ใน `sql/schema.sql` เมื่อไหร่ ให้เพิ่มใน `scripts/migrate.ts` ด้วย แล้วรัน `npm run db:migrate` กับ TiDB **ก่อน** merge (ห้ามใช้ `db:init` กับฐานข้อมูลจริง เพราะลบข้อมูลทั้งหมด)

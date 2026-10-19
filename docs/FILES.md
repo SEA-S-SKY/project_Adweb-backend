@@ -44,7 +44,7 @@ flowchart LR
 | `cors(...)` | อ่าน `CORS_ORIGINS` (คั่นด้วยจุลภาค) ถ้ามี `*` อยู่ในรายการจะอนุญาตทุก origin ไม่ใส่เลยจะใช้ `http://localhost:4200` (Angular dev server) |
 | `express.json()` | แปลง body ที่เป็น JSON เป็น `req.body` ถ้า JSON พังจะโยน error ชนิด `entity.parse.failed` ไปที่ `errorHandler` |
 | `GET /` | ตอบสถานะ `ok` ไว้เช็กว่า server ยังทำงาน |
-| `/api/config`, `/api/customers`, `/api/orders` | ผูก router จาก `controller/` |
+| `/api/config`, `/api/customers`, `/api/orders`, `/api/plans`, `/api/jobs`, `/api/events` | ผูก router จาก `controller/` |
 | `notFoundHandler` | ไม่ตรงเส้นไหนเลย → `404 NOT_FOUND` |
 | `errorHandler` | ต้องอยู่ท้ายสุด รับ error ทุกตัวที่ถูก throw |
 
@@ -57,8 +57,10 @@ flowchart LR
 | กลุ่ม | ใช้ที่ไหน |
 |---|---|
 | `shop` (ชื่อ, พิกัดร้าน) | คำนวณ `distanceFromShopKm` และรัศมีให้บริการใน `model/customer.ts` |
-| `pricing` | ยังไม่มีใครใช้ใน backend (รอ `/api/plans`) ส่งให้ frontend ผ่าน `/api/config` |
-| `delivery` | `maxBoxesPerOrder` ใช้ตรวจจำนวนกล่อง, `serviceRadiusKm` ใช้ตรวจพิกัดลูกค้า ที่เหลือรอใช้ตอนจัดเส้นทาง |
+| `pricing` | สูตรเงินใน `service/costing.ts` และส่งให้ frontend ผ่าน `/api/config` |
+| `delivery` | `maxBoxesPerOrder` ใช้ตรวจจำนวนกล่อง, `serviceRadiusKm` ใช้ตรวจพิกัดลูกค้า, ที่เหลือ (ความเร็ว, เวลาออก/กำหนดส่ง, เวลาจอด, ขากลับ, `distanceMethod`) ใช้ใน `service/routing.ts` |
+| `routing` | URL ของ OSRM (env `OSRM_URL`), timeout, จำนวนจุดสูงสุดต่อ `/table`, งบเวลาขอเส้นบนแผนที่, `alternativeTolerance` ของปุ่มคำนวณใหม่ |
+| `events` | อายุ event (วัน), จำนวนสูงสุดต่อการดึง, ขนาด body สูงสุด |
 | `simulate` | จำนวนออเดอร์สุ่มขั้นต่ำ/สูงสุดของ `POST /api/orders/simulate` |
 | `nearby` | รัศมีค่าเริ่มต้นของ `/nearby` (ลูกค้า 1 กม., ออเดอร์ 2 กม.) และรัศมีสูงสุดที่ยอมให้ค้น (50 กม.) |
 | `riderColors` | สีประจำไรเดอร์แต่ละคน ส่งให้ frontend |
@@ -107,7 +109,7 @@ flowchart LR
 - `parseQuantity()` ต้องเป็น **number** จำนวนเต็ม 1 ถึง `maxBoxesPerOrder` (ส่ง `"2"` เป็น string จะไม่ผ่าน)
 - `findOrder(id)` ดึงออเดอร์พร้อมข้อมูลลูกค้าผ่าน `ORDER_SELECT`
 - `findEditableOrder(id)` แก้/ลบได้เฉพาะออเดอร์ `pending` สถานะอื่นตอบ `409 ORDER_LOCKED` (ยืนยันเส้นทางไปแล้ว)
-- `inTransaction(work)` ยืม connection จาก pool เปิด transaction ถ้า `work` สำเร็จ commit ถ้า throw จะ rollback ทั้งหมด แล้วคืน connection เสมอ
+- `inTransaction(work)` มาจาก `lib/db.ts` (ใช้ร่วมกับ plans และ jobs)
 
 | เส้น | การทำงาน |
 |---|---|
@@ -115,7 +117,7 @@ flowchart LR
 | `GET /summary?date=` | นับจำนวนออเดอร์, รวมกล่อง, นับแยกสถานะ ใช้ `SUM(status = 'pending')` (เงื่อนไขจริง = 1) และ `COALESCE` กันค่า `NULL` ตอนไม่มีออเดอร์ |
 | `GET /nearby` | เหมือนของลูกค้า แต่ไม่ส่ง `date` = ทุกวัน แทรกคอลัมน์ระยะเข้า `ORDER_SELECT` ด้วย `.replace()` ลำดับ params คือ `[lat, lat, lng, date?, status?, radiusKm]` ตามลำดับ `?` ใน SQL |
 | `POST /simulate` | ดูหัวข้อถัดไป |
-| `DELETE /all` | ล้างทุกอย่างใน transaction ลบตามลำดับ foreign key `job_stops → jobs → plans → orders` (ลูกค้าไม่ถูกลบ) ตอบจำนวนที่ลบ |
+| `DELETE /all` | ล้างทุกอย่างใน transaction ลบ `events` แล้วตามลำดับ foreign key `job_stops → jobs → plans → orders` (ลูกค้าไม่ถูกลบ) ตอบจำนวนที่ลบ |
 | `GET /:id` | ไม่เจอ → 404 |
 | `POST /` | `customerId` ต้องเป็นจำนวนเต็มบวกและมีลูกค้าคนนั้นจริง (ไม่มี → 400 ไม่ใช่ 404), `quantity` ผ่าน `parseQuantity()`, `orderDate` ไม่ส่ง = วันนี้ ตอบ `201` |
 | `PATCH /:id` | แก้ได้เฉพาะ `quantity` และเฉพาะออเดอร์ `pending` |
@@ -135,6 +137,41 @@ flowchart LR
 7. ดึงออเดอร์ที่เพิ่งสร้างกลับมาตอบ `201`
 
 > กติกา "1 ออเดอร์ต่อลูกค้าต่อวัน" ตอนนี้บังคับเฉพาะใน `/simulate` ส่วน `POST /` ยังเพิ่มซ้ำได้ และฐานข้อมูลไม่มี UNIQUE key กันไว้
+
+### `controller/plans.ts`
+
+| เส้น | การทำงาน |
+|---|---|
+| `POST /` | อ่าน `date` (ไม่ส่ง = วันนี้) และ `seed` (ไม่ส่ง = สุ่ม, ต้องเป็นจำนวนเต็ม 0–2147483647 เพราะคอลัมน์เป็น INT) ดึงออเดอร์ `pending` ของวันนั้น ไม่มีเลย → ถ้าวันนั้นยืนยันแล้วตอบ `409 PLAN_ALREADY_CONFIRMED` ไม่งั้น `400 NO_ORDERS` ถ้ามี เรียก `buildRoutes()` **นอก transaction** (ต้องรอ OSRM) แล้วคิดสรุปและคำเตือนด้วย `service/costing.ts` จากนั้นใน transaction: INSERT แผน `draft` แล้วลบ draft อื่นของวันนั้น ตอบ `201` |
+| `GET /latest?date=` | แผนล่าสุด (id มากสุด) ของวันนั้น จะเป็น draft หรือ confirmed ก็ได้ ไม่มี → 404 |
+| `GET /:id` | ไม่เจอ → 404 |
+| `POST /:id/confirm` | ดูด้านล่าง |
+
+**`POST /:id/confirm` ทำงานอย่างไร** (ทั้งหมดใน transaction เดียว ถ้าพังกลางทาง rollback หมด)
+
+1. `SELECT ... FOR UPDATE` ล็อกแผน ไม่เจอ → 404 ยืนยันแล้ว → `409 PLAN_ALREADY_CONFIRMED`
+2. ล็อกออเดอร์ทุกตัวในแผน แล้วเช็กว่ายังอยู่ ยัง `pending` และจำนวนกล่องเท่ากับตอนคำนวณ ไม่ตรง → `409 PLAN_OUTDATED` (ให้กดคำนวณใหม่)
+3. หาเลขใบงานล่าสุดที่ขึ้นต้นด้วย `MMDD-` แล้วนับต่อ (วันเดียวกันยืนยันได้หลายรอบถ้ามีออเดอร์เข้ามาทีหลัง และ `job_no` เป็น UNIQUE ทั้งตาราง ปีถัดไปวันเดียวกันจึงนับต่อจากปีก่อน ไม่ชนกัน)
+4. INSERT `jobs` ทีละไรเดอร์ และ `job_stops` ของไรเดอร์นั้นทีเดียวด้วย `VALUES ?` (`eta` เก็บเป็น TIME `HH:mm:00`)
+5. เปลี่ยนออเดอร์เป็น `assigned` และบันทึกแผนเป็น `confirmed` พร้อม `jobNo` ใน `result_json`
+
+### `controller/jobs.ts`
+
+- `findJob(jobNo)` ดึงใบงานด้วย `JOB_SELECT` แล้วดึงจุดส่งด้วย `JOB_STOP_SELECT` ประกอบด้วย `toJob()`
+
+| เส้น | การทำงาน |
+|---|---|
+| `GET /?date=` | ใบงานทั้งหมดของวัน เรียงตามเลขใบงาน แปลงด้วย `toJobListItem()` |
+| `GET /:jobNo` | ไม่เจอ → 404 |
+| `PATCH /:jobNo/stops/:seq` | `delivered` ต้องเป็น boolean ล็อกจุดส่งด้วย `FOR UPDATE` แล้ว `true` → `delivered_at = COALESCE(delivered_at, NOW())` (กดซ้ำไม่เปลี่ยนเวลาเดิม) และออเดอร์เป็น `delivered` · `false` → `delivered_at = NULL` และออเดอร์กลับเป็น `assigned` ตอบใบงานทั้งใบ |
+
+### `controller/events.ts`
+
+แจ้งเตือนข้ามเครื่องแบบ polling แทน Cloudflare Worker เดิมของ frontend
+
+- `toBangkokDateTime(iso)` รับเฉพาะ ISO 8601 ที่**มี timezone** (`Z` หรือ `+07:00`) แปลงเป็นเวลาไทย `YYYY-MM-DD HH:mm:ss.SSS` ให้ตรงกับคอลัมน์ `DATETIME(3)` ไม่มี timezone → ถือว่าผิด เพราะแต่ละเครื่องจะตีความไม่ตรงกัน
+- `GET /?since=` event ที่ `created_at` มากกว่า `since` (ไม่รวมเท่ากับ) เรียงเก่า → ใหม่ ไม่เกิน `events.maxPerRequest` ส่งคืน `payload` ตามที่ frontend ส่งมา
+- `POST /` ตรวจ `id`, `type`, `createdAt`, `jobNo` และขนาด body แล้ว `INSERT IGNORE` (id ซ้ำไม่บันทึกซ้ำ) จากนั้นลบ event ที่เก่ากว่า `events.keepDays` วัน
 
 ---
 
@@ -158,13 +195,26 @@ flowchart LR
 - **`ORDER_SELECT`** คำสั่ง SELECT กลาง `orders JOIN customers` ทุกเส้นของออเดอร์ใช้ตัวนี้แล้วต่อ `WHERE` เอง ผลลัพธ์จึงมีข้อมูลลูกค้าแนบมาเสมอ
 - **`toOrder(row)`** แปลงแถวเป็นออเดอร์ที่มี object `customer` ซ้อนอยู่ข้างใน
 
+### `model/plan.ts`
+
+- interface `Plan`, `Route`, `RouteStop`, `RouteCost`, `PlanSummary`, `PlanWarning` ตาม API.md หัวข้อ 4 (เพิ่ม `distanceSource`)
+- `PlanResult` คือส่วนที่เก็บในคอลัมน์ `result_json` (`distanceSource`, `routes`, `summary`, `warnings`)
+- `parseJson()` mysql2 คืนคอลัมน์ JSON เป็น object อยู่แล้ว แต่กันไว้เผื่อฐานข้อมูลที่คืนเป็น string
+- `toPlan(row)` แปลงแถว `plans` เป็น `Plan`
+
+### `model/job.ts`
+
+- **`JOB_SELECT`** `jobs JOIN plans` พร้อมนับจุดส่งทั้งหมดและที่ส่งแล้วด้วย subquery (ไม่ใช้ `GROUP BY` เพราะต้องดึง `result_json` มาด้วย)
+- **`JOB_STOP_SELECT`** `job_stops JOIN orders JOIN customers` ชื่อ เบอร์ ที่อยู่ จึงเป็นข้อมูลล่าสุดของลูกค้าเสมอ
+- `toJobListItem()` / `toJob()` เอา `finishTime` และ `path` จาก route ใน `result_json` ที่มี `jobNo` ตรงกัน (ตาราง `jobs` ไม่มีคอลัมน์สองอันนี้) สร้าง `navigateUrl` ของแต่ละจุด และ `googleMapsUrl` เส้นทางเต็ม (จุดระหว่างทางคั่นด้วย `%7C`)
+
 ---
 
 ## `lib/` — ตัวช่วยที่ใช้ทั้งโปรเจกต์
 
 ### `lib/http.ts` — รูปแบบ error กลาง
 
-- `ApiErrorCode` รายการ code ทั้งหมดตาม API.md (`NO_ORDERS`, `PLAN_ALREADY_CONFIRMED` เตรียมไว้ให้ `/api/plans`)
+- `ApiErrorCode` รายการ code ทั้งหมดตาม API.md + `PLAN_OUTDATED` (ออเดอร์เปลี่ยนหลังคำนวณแผน)
 - `ApiError(status, code, message, details?)` throw ตัวนี้จาก controller ได้เลย
 - `badRequest()` = 400 `VALIDATION_ERROR`, `notFound()` = 404 `NOT_FOUND`
 - `notFoundHandler` ตอบ 404 เมื่อไม่มีเส้นที่ตรง
@@ -181,8 +231,13 @@ flowchart LR
 
 ### `lib/format.ts`
 
-- `round2(n)` ปัดทศนิยม 2 ตำแหน่ง (ระยะทาง)
+- `round2(n)` ปัดทศนิยม 2 ตำแหน่ง (ระยะทาง, เงิน)
 - `toIsoBangkok(dt)` `"2026-09-18 10:05:00"` → `"2026-09-18T10:05:00+07:00"` เวลาในฐานข้อมูลเป็นเวลาไทยอยู่แล้ว (ดู `dbconnect.ts`) จึงแค่ต่อ `+07:00` ไม่ต้องแปลง
+- `addMinutes("11:30", 13.2)` → `"11:44"` ปัดนาทีขึ้นเสมอ (ETA ไม่ควรเร็วกว่าความจริง) เหมือนที่ frontend เคยใช้
+
+### `lib/db.ts`
+
+`inTransaction(work)` ยืม connection จาก pool เปิด transaction ถ้า `work` สำเร็จ commit ถ้า throw จะ rollback ทั้งหมด แล้วคืน connection เสมอ ใช้ใน orders, plans, jobs และ `scripts/clear-date.ts`
 
 ### `lib/ca.ts` — ใบรับรอง Let's Encrypt
 
@@ -190,11 +245,38 @@ flowchart LR
 
 ---
 
-## `service/distance.ts` — คำนวณระยะทาง
+## `service/` — งานคำนวณ
 
-- **`haversineKm(a, b)`** ระยะเส้นตรงบนผิวโลกระหว่างสองพิกัด (กม.) ใช้ใน JS เช่น `distanceFromShopKm` และตรวจรัศมีให้บริการ
+### `service/distance.ts` — คำนวณระยะทาง
+
+- **`haversineKm(a, b)`** ระยะเส้นตรงบนผิวโลกระหว่างสองพิกัด (กม.) ใช้ใน JS เช่น `distanceFromShopKm`, ตรวจรัศมีให้บริการ และเป็นตัวสำรองตอน OSRM ใช้ไม่ได้
 - **`haversineSql(latCol, lngCol)`** สูตรเดียวกันในรูป SQL ใช้ใน `/nearby` ให้ฐานข้อมูลกรองและเรียงให้ มี `?` 3 ตัว ต้องส่ง params `[lat, lat, lng]` ของจุดศูนย์กลางตามลำดับนี้ `LEAST(1, ...)` กันค่าเกิน 1 จากการปัดเศษ ซึ่งจะทำให้ `ASIN` คืน `NULL`
   ใช้สูตรเองแทน `ST_Distance_Sphere` เพราะ TiDB ยังไม่รองรับฟังก์ชัน spatial
+
+### `service/osrm.ts` — ถนนจริงจาก OSRM
+
+- `osrmDistanceTable(points)` เรียก `/table/v1/driving?annotations=distance` **ครั้งเดียว** ได้ระยะตามถนนของทุกคู่จุด (เมตร → กม.) คู่ที่หาเส้นทางไม่เจอเป็น `null` จุดเกิน `routing.maxTablePoints` (100) ไม่เรียกเลย
+- `osrmPath(points, timeoutMs?)` เรียก `/route/v1/driving?overview=full&geometries=geojson` ได้เส้นตามถนน แปลง `[lng, lat]` ของ GeoJSON เป็น `[lat, lng]` ให้ Leaflet
+- เรียกไม่สำเร็จ (timeout, ตอบไม่ใช่ 200, `code` ไม่ใช่ `"Ok"`) คืน `null` เสมอ ไม่ throw ให้ `routing.ts` ตัดสินใจถอยไปใช้ haversine
+
+### `service/routing.ts` — อัลกอริทึมจัดเส้นทาง
+
+`buildRoutes(orders, seed, deps?)` คืน `{ routes, distanceSource }` (`deps` มีไว้ให้ test ใส่ OSRM ปลอม)
+
+1. **ตารางระยะทาง** `distanceMatrix()` ถ้า `distanceMethod = "osrm"` ขอจาก OSRM ช่องไหนเป็น `null` ใช้ haversine แทนเฉพาะช่องนั้น ถ้าขอทั้งตารางไม่ได้ใช้ haversine ทั้งหมด (`distanceSource = "haversine"`)
+2. **กวาดตามมุม** `sweepOrder()` เรียงลูกค้าตามมุมรอบร้าน แล้วหมุนให้เริ่มหลังช่องว่างที่กว้างที่สุด (แบบเดียวกับที่ frontend เคยทำ)
+3. **แผนผู้สมัคร** `chooseGrouping()` ลองทุกจุดเริ่มทั้งสองทิศ ตัดเป็นกลุ่มละ `maxOrdersPerRider` คนติดกัน แผนที่แบ่งกลุ่มเหมือนกันนับเป็นแผนเดียว
+4. **ลำดับในกลุ่ม** `bestStopOrder()` ≤ 6 จุดลองทุกลำดับ (`permutations()`) มากกว่านั้น nearest-neighbor + 2-opt `tourKm()` คิดระยะจากร้าน (รวมขากลับถ้า `includeReturnTrip`)
+5. **ให้คะแนน** `routeScore()` = ค่าส่ง (`calculateRouteCost`) + 1,000 ต่อจุดที่ ETA เกิน `deadline` เรียงจากน้อยไปมาก
+6. **เลือกด้วย seed** `mulberry32(seed)` ตัวสุ่มที่ seed เดิมได้เลขเดิม เลือกจากแผนอันดับต้น (ไม่เกิน 5 และแพงกว่าแผนดีสุดไม่เกิน `alternativeTolerance` 3%) ยกกำลังสองให้เอนไปทางแผนที่ดีกว่า
+7. **สร้าง Route** `buildRoute()` คิด `legDistanceKm`, `cumulativeDistanceKm`, `eta` = ออกร้าน + ระยะสะสม/ความเร็ว + (ลำดับ−1)×เวลาจอด, `durationMin`, `finishTime`, `cost` ตามสูตรใน API.md
+8. **เส้นบนแผนที่** ถ้าระยะมาจาก OSRM ขอ `osrmPath()` ทีละ `geometryConcurrency` เส้น ภายในงบเวลารวม `geometryBudgetMs` เส้นไหนไม่ทันใช้เส้นตรงต่อจุด
+
+### `service/costing.ts` — สูตรเงิน (API.md หัวข้อ 6)
+
+- `calculateRouteCost(totalBoxes, distanceKm)` ค่าเรียก + 2 × กล่อง × กม. (ตัวอย่างโจทย์ 6 กล่อง 2 กม. = 39 บาท มี unit test)
+- `calculatePlanSummary(routes)` รายได้, ต้นทุนอาหาร, กำไรขั้นต้น, ค่าส่งรวม, กำไรสุทธิ, เวลาส่งเสร็จช้าสุด, ทันเวลาทุกจุดไหม
+- `planWarnings(routes, summary)` `LATE_DELIVERY` ทีละจุดที่เกินเวลา และ `NOT_PROFITABLE` เมื่อกำไรสุทธิติดลบ
 
 ---
 
@@ -208,9 +290,10 @@ flowchart LR
 |---|---|---|
 | `customers` | ลูกค้า | index ที่ `first_name`, `last_name` ไว้ค้นชื่อ |
 | `orders` | ออเดอร์ | FK ไป `customers`, `CHECK quantity 1–3`, index `(order_date, status)` ตรงกับเงื่อนไขที่ค้นบ่อย |
-| `plans` | ผลการจัดเส้นทาง (ยังไม่มี API) | `seed` ไว้สุ่มซ้ำได้, ผลทั้งหมดเก็บเป็น `result_json` |
-| `jobs` | ใบงานของไรเดอร์ 1 คน (ยังไม่มี API) | `job_no` ห้ามซ้ำ, FK ไป `plans` |
-| `job_stops` | จุดส่งในใบงาน (ยังไม่มี API) | ออเดอร์ 1 รายการอยู่ได้ 1 จุดส่ง, `(job_id, seq)` ห้ามซ้ำ, ลบใบงานแล้วจุดส่งหายตาม (`ON DELETE CASCADE`) |
+| `plans` | ผลการจัดเส้นทาง | `seed` ไว้สุ่มซ้ำได้, ผลทั้งหมดเก็บเป็น `result_json` |
+| `jobs` | ใบงานของไรเดอร์ 1 คน | `job_no` ห้ามซ้ำ, FK ไป `plans` |
+| `job_stops` | จุดส่งในใบงาน | ออเดอร์ 1 รายการอยู่ได้ 1 จุดส่ง, `(job_id, seq)` ห้ามซ้ำ, ลบใบงานแล้วจุดส่งหายตาม (`ON DELETE CASCADE`) |
+| `events` | แจ้งเตือนข้ามเครื่อง | ไม่มี FK (log ชั่วคราว), index `created_at` ไว้ดึง event ใหม่, ลบอัตโนมัติเมื่อเก่าเกิน 2 วัน |
 
 ท้ายไฟล์ใส่ลูกค้าตัวอย่าง 30 คน (ข้อมูลสมมติ) อยู่ในรัศมี 3 กม. จากร้านทั้งหมด
 
@@ -222,26 +305,46 @@ flowchart LR
 4. `CREATE DATABASE IF NOT EXISTS` → `USE` → รันทั้งไฟล์ทีเดียว (`multipleStatements: true`)
 5. นับลูกค้าแล้วพิมพ์ผล ล้มเหลวจะจบด้วย exit code 1
 
+### `scripts/migrate.ts` — `npm run db:migrate`
+
+เพิ่มตารางใหม่ให้ฐานข้อมูลที่มีข้อมูลอยู่แล้ว ใช้ `CREATE TABLE IF NOT EXISTS` จึงรันซ้ำได้และไม่ลบอะไร เพิ่มตารางใหม่ใน `sql/schema.sql` เมื่อไหร่ ให้เพิ่มในรายการ `MIGRATIONS` ของไฟล์นี้ด้วย
+
+### `scripts/clear-date.ts` — `npm run db:clear-date -- YYYY-MM-DD`
+
+ลบข้อมูลของวันเดียวใน transaction: event (ที่ `payload.date` ตรงหรือเป็นของใบงานวันนั้น) → `job_stops` → `jobs` → `plans` → `orders` ไม่แตะวันอื่นและลูกค้า ใช้ล้างวันที่ทดสอบ (`2099-12-31`) หลังรัน load test
+
+### `scripts/rider-workflow-load-test.mjs`, `scripts/rider-capacity-stress-test.mjs`
+
+ย้ายมาจาก frontend ยิง API จริง ต้องเปิด server ก่อน (`npm run dev` หรือชี้ไปที่ Vercel ด้วย env) ค่าเริ่มต้นใช้วันที่ `2099-12-31` และสร้างใบงานทดสอบเองด้วย flow จริง (จำลองออเดอร์ → จัดเส้นทาง → ยืนยัน) รายงานเขียนลง `output/load-tests/` (ไม่ commit) วิธีตั้งค่าอยู่หัวไฟล์
+
+## `test/` — unit test (`npm test`)
+
+ใช้ `node:test` ที่มากับ Node (รันผ่าน `tsx --test`) ไม่ต่อฐานข้อมูลและไม่เรียก OSRM จริง
+
+- `costing.test.ts` ตัวอย่างจากโจทย์ (39 บาท), การปัดเศษ, สรุปแผน, คำเตือน, `addMinutes`
+- `routing.test.ts` ทุกออเดอร์อยู่ในเส้นทางเดียวพอดี, seed เดิมได้ผลเดิม, seed ต่างได้แผนต่างได้, ทุก seed แพงกว่าแผนดีสุดไม่เกิน 3%, ลำดับในกลุ่มสั้นที่สุดจริง, OSRM ล่ม/ค้างแล้วถอยไป haversine/เส้นตรงได้, สูตร ETA
+
 ---
 
 ## ไฟล์ตั้งค่า
 
 | ไฟล์ | หน้าที่ |
 |---|---|
-| `package.json` | dependency (express 5, mysql2, cors, dotenv) และคำสั่ง `dev` / `build` / `start` / `db:init` |
+| `package.json` | dependency (express 5, mysql2, cors, dotenv) และคำสั่ง `dev` / `build` / `start` / `db:init` / `db:migrate` / `db:clear-date` / `test` / `test:rider-*` |
 | `tsconfig.json` | คอมไพล์เป็น CommonJS ES2022 ลง `dist/` เปิด `strict` |
 | `vercel.json` | ตั้ง region `sin1` (สิงคโปร์) ให้อยู่ใกล้ TiDB ลดเวลาเชื่อมต่อ |
 | `.env.example` | ตัวอย่างค่า env ทั้งแบบ MySQL ในเครื่องและ TiDB Cloud คัดลอกเป็น `.env` แล้วแก้ |
-| `.gitignore` | ไม่ commit `node_modules/`, `dist/`, `.env`, `*.log` |
-| `postman/project_Adweb.postman_collection.json` | request ทดสอบทุกเส้น แบ่งเป็น Config / Customers / Orders ใช้ตัวแปร `baseUrl`, `customerId`, `orderId`, `date` ฯลฯ |
+| `.gitignore` | ไม่ commit `node_modules/`, `dist/`, `.env`, `*.log`, `output/` (รายงาน load test) |
+| `postman/project_Adweb.postman_collection.json` | request ทดสอบทุกเส้น แบ่งเป็น Config / Customers / Orders / Plans / Jobs / Events ใช้ตัวแปร `baseUrl`, `customerId`, `orderId`, `planId`, `jobNo`, `date` |
 
 ---
 
-## เพิ่ม endpoint ใหม่ (เช่น `/api/plans`)
+## เพิ่ม endpoint ใหม่
 
-1. สร้าง `controller/plans.ts` export `router` แล้วผูกใน `app.ts` ตรงคอมเมนต์ `/api/plans และ /api/jobs`
+1. สร้าง `controller/<ชื่อ>.ts` export `router` แล้วผูกใน `app.ts`
 2. ถ้ามีเส้นแบบ `/something` และ `/:id` ให้ประกาศ `/something` ก่อน
 3. ตรวจ input ด้วยฟังก์ชันใน `lib/validate.ts` และ throw `badRequest()` / `notFound()` / `ApiError` แทนการ `res.status(...)` เอง
 4. ตัวเลขกติกาใหม่ใส่ใน `config.ts`
-5. งานที่เขียนหลายตารางพร้อมกันให้ใช้ transaction แบบ `inTransaction()` ใน `controller/orders.ts`
-6. ระยะทางใช้ `haversineKm()` / `haversineSql()` ห้ามใช้ฟังก์ชัน spatial ของ MySQL
+5. งานที่เขียนหลายตารางพร้อมกันให้ใช้ `inTransaction()` จาก `lib/db.ts` และอย่าเรียก API ภายนอก (เช่น OSRM) ระหว่าง transaction
+6. ระยะทางใช้ `haversineKm()` / `haversineSql()` หรือ `service/osrm.ts` ห้ามใช้ฟังก์ชัน spatial ของ MySQL
+7. มีตารางใหม่ → เพิ่มทั้งใน `sql/schema.sql` และ `scripts/migrate.ts`
