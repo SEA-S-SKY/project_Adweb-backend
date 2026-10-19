@@ -2,7 +2,7 @@
   "info": {
     "name": "project_Adweb API (HW-5)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "ทุก endpoint ของ HW-5 · แก้ตัวแปร baseUrl เป็น URL ของ Vercel หลัง deploy"
+    "description": "ทุก endpoint ของ HW-5 + จัดเส้นทาง ใบงาน และแจ้งเตือน · แก้ตัวแปร baseUrl เป็น URL ของ Vercel หลัง deploy"
   },
   "variable": [
     {
@@ -20,6 +20,14 @@
     {
       "key": "orderId",
       "value": "1"
+    },
+    {
+      "key": "planId",
+      "value": "1"
+    },
+    {
+      "key": "jobNo",
+      "value": "0918-01"
     }
   ],
   "item": [
@@ -495,6 +503,236 @@
               ]
             },
             "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Plans",
+      "item": [
+        {
+          "name": "จัดเส้นทาง / คำนวณใหม่",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plans"
+              ]
+            },
+            "description": "จัดเส้นทางจากออเดอร์ pending ของวันนั้น · seed เดิมได้ผลเดิม ไม่ส่ง seed = สุ่มใหม่ · 400 NO_ORDERS / 409 PLAN_ALREADY_CONFIRMED",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"{{date}}\",\n  \"seed\": 42\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "แผนล่าสุดของวัน",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/plans/latest?date={{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plans",
+                "latest"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{date}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "แผนตาม id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/plans/{{planId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plans",
+                "{{planId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ยืนยันแผน + สร้างใบงาน",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/plans/{{planId}}/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plans",
+                "{{planId}}",
+                "confirm"
+              ]
+            },
+            "description": "409 PLAN_ALREADY_CONFIRMED ถ้ายืนยันแล้ว · 409 PLAN_OUTDATED ถ้าออเดอร์ถูกแก้/ลบหลังคำนวณ"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "ใบงานทั้งหมดของวัน",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs?date={{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jobs"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{date}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ใบงาน 1 ใบ (หน้าไรเดอร์)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobNo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jobs",
+                "{{jobNo}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "กดส่งแล้ว",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobNo}}/stops/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jobs",
+                "{{jobNo}}",
+                "stops",
+                "1"
+              ]
+            },
+            "description": "ส่ง false เพื่อยกเลิก",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivered\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "ส่ง event แจ้งเตือน",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"demo-1\",\n  \"type\": \"rider-opened\",\n  \"createdAt\": \"2026-10-20T04:30:00.000Z\",\n  \"jobNo\": \"{{jobNo}}\",\n  \"title\": \"ไรเดอร์ 1 รับงานแล้ว\",\n  \"message\": \"เปิดงาน {{jobNo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "event ใหม่หลังเวลาที่กำหนด",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events?since=2026-10-20T04:00:00.000Z",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "since",
+                  "value": "2026-10-20T04:00:00.000Z"
+                }
+              ]
+            }
           }
         }
       ]

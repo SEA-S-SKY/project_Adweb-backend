@@ -22,7 +22,21 @@ export const config = {
     departTime: "11:30",
     deadline: "12:30",
     includeReturnTrip: false, // ⚠️ ข้อ 3 รอถามอาจารย์
-    distanceMethod: "haversine" as "haversine" | "osrm", // ⚠️ ข้อ 4
+    // ⚠️ ข้อ 4: "osrm" = ระยะตามถนนจริง (ถ้า OSRM ล่มจะถอยไปใช้ haversine เอง) · "haversine" = เส้นตรง
+    distanceMethod: "osrm" as "haversine" | "osrm",
+  },
+  routing: {
+    osrmUrl: (process.env.OSRM_URL || "https://router.project-osrm.org").replace(/\/$/, ""),
+    timeoutMs: 6000,
+    maxTablePoints: 100, // OSRM สาธารณะรับ /table ได้ไม่เกิน 100 จุดต่อครั้ง
+    geometryConcurrency: 2, // ยิงขอเส้นทางพร้อมกันกี่เส้น (OSRM สาธารณะไม่ชอบโดนยิงถี่)
+    geometryBudgetMs: 5000, // เวลารวมสูงสุดที่ใช้ขอเส้นบนแผนที่ทุกไรเดอร์ (POST /plans จะได้ไม่ช้าเกิน ~11 วิ แม้ OSRM ค้าง)
+    alternativeTolerance: 0.03, // ปุ่ม "คำนวณใหม่" เลือกได้เฉพาะแผนที่แพงกว่าแผนดีที่สุดไม่เกิน 3%
+  },
+  events: {
+    keepDays: 2, // event เก่ากว่านี้ลบทิ้งอัตโนมัติ (ตำแหน่ง GPS ไรเดอร์ส่งมาถี่ ตารางจะได้ไม่บวม)
+    maxPerRequest: 200,
+    maxPayloadBytes: 8000,
   },
   simulate: {
     minOrders: 20,

@@ -8,6 +8,7 @@
 
 SET NAMES utf8mb4;
 
+DROP TABLE IF EXISTS events;
 DROP TABLE IF EXISTS job_stops;
 DROP TABLE IF EXISTS jobs;
 DROP TABLE IF EXISTS plans;
@@ -92,6 +93,21 @@ CREATE TABLE job_stops (
   UNIQUE KEY uq_job_stops_job_seq (job_id, seq), -- ลำดับในใบงานเดียวกันห้ามซ้ำ
   CONSTRAINT fk_job_stops_job FOREIGN KEY (job_id) REFERENCES jobs (id) ON DELETE CASCADE,
   CONSTRAINT fk_job_stops_order FOREIGN KEY (order_id) REFERENCES orders (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- events — แจ้งเตือนข้ามเครื่อง (ไรเดอร์เปิดงาน, ส่งสำเร็จ, ตำแหน่ง GPS)
+-- ไม่ผูก foreign key เพราะเป็น log ชั่วคราว ลบอัตโนมัติเมื่อเก่ากว่า config.events.keepDays วัน
+-- ถ้าฐานข้อมูลมีอยู่แล้ว ใช้ npm run db:migrate เพิ่มตารางนี้โดยไม่ลบข้อมูลเดิม
+-- ---------------------------------------------------------------------
+CREATE TABLE events (
+  id          VARCHAR(128) NOT NULL,
+  event_type  VARCHAR(40)  NOT NULL,
+  job_no      VARCHAR(10)  NULL,
+  payload     JSON         NOT NULL,
+  created_at  DATETIME(3)  NOT NULL, -- เวลาไทย แปลงจาก createdAt ที่ส่งมา
+  PRIMARY KEY (id),
+  INDEX idx_events_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------

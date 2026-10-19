@@ -8,7 +8,12 @@
     "dev": "tsx watch server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "db:init": "tsx scripts/init-db.ts"
+    "db:init": "tsx scripts/init-db.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:clear-date": "tsx scripts/clear-date.ts",
+    "test": "tsx --test test/*.test.ts",
+    "test:rider-workflow": "node scripts/rider-workflow-load-test.mjs",
+    "test:rider-capacity": "node scripts/rider-capacity-stress-test.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",
