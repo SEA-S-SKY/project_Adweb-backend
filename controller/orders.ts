@@ -1,7 +1,8 @@
 import express from "express";
-import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { config } from "../config";
 import { conn } from "../dbconnect";
+import { inTransaction } from "../lib/db";
 import { ApiError, badRequest, notFound } from "../lib/http";
 import { parseDate, parseId, parseNearbyQuery, queryString } from "../lib/validate";
 import { ORDER_SELECT, ORDER_STATUSES, OrderRow, OrderStatus, toOrder } from "../model/order";
@@ -43,21 +44,6 @@ async function findEditableOrder(id: number) {
     throw new ApiError(409, "ORDER_LOCKED", "ออเดอร์นี้ยืนยันเส้นทางแล้ว แก้ไขหรือลบไม่ได้");
   }
   return order;
-}
-
-async function inTransaction<T>(work: (c: PoolConnection) => Promise<T>): Promise<T> {
-  const c = await conn.getConnection();
-  try {
-    await c.beginTransaction();
-    const result = await work(c);
-    await c.commit();
-    return result;
-  } catch (e) {
-    await c.rollback();
-    throw e;
-  } finally {
-    c.release();
-  }
 }
 
 // GET /api/orders?date=&status=
@@ -173,7 +159,8 @@ router.post("/simulate", async (req, res) => {
 // DELETE /api/orders/all — HW-5 ข้อ 3.2 ล้างข้อมูลจำลองทั้งหมด (ทุกวัน ทุกสถานะ รวมแผนและใบงาน)
 router.delete("/all", async (req, res) => {
   const result = await inTransaction(async (c) => {
-    // ลบตามลำดับ foreign key: job_stops → jobs → plans → orders
+    // ลบตามลำดับ foreign key: job_stops → jobs → plans → orders (event แจ้งเตือนลบด้วย)
+    await c.query("DELETE FROM events");
     await c.query("DELETE FROM job_stops");
     const [jobs] = await c.query<ResultSetHeader>("DELETE FROM jobs");
     const [plans] = await c.query<ResultSetHeader>("DELETE FROM plans");

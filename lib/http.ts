@@ -8,6 +8,7 @@ export type ApiErrorCode =
   | "ORDER_LOCKED"
   | "NO_ORDERS"
   | "PLAN_ALREADY_CONFIRMED"
+  | "PLAN_OUTDATED"
   | "INTERNAL_ERROR";
 
 export interface ErrorDetail {

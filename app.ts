@@ -3,6 +3,9 @@ import cors from "cors";
 import { router as config } from "./controller/config";
 import { router as customers } from "./controller/customers";
 import { router as orders } from "./controller/orders";
+import { router as plans } from "./controller/plans";
+import { router as jobs } from "./controller/jobs";
+import { router as events } from "./controller/events";
 import { errorHandler, notFoundHandler } from "./lib/http";
 
 export const app = express();
@@ -30,7 +33,9 @@ app.get("/", (req, res) => {
 app.use("/api/config", config);
 app.use("/api/customers", customers);
 app.use("/api/orders", orders);
-// /api/plans และ /api/jobs: @SeMple1 และ @SEA-S-SKY เพิ่ม router ตรงนี้
+app.use("/api/plans", plans); // @SeMple1 (อัลกอริทึมอยู่ใน service/routing.ts)
+app.use("/api/jobs", jobs); // @SEA-S-SKY
+app.use("/api/events", events); // แจ้งเตือนข้ามเครื่อง
 
 app.use(notFoundHandler);
 app.use(errorHandler);
