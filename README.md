@@ -51,6 +51,8 @@ project_Adweb-backend/
 └── postman/             collection สำหรับทดสอบทุกเส้น
 ```
 
+อธิบายการทำงานของแต่ละไฟล์อย่างละเอียดอยู่ใน [docs/FILES.md](docs/FILES.md)
+
 **เพิ่ม endpoint ใหม่:** throw `ApiError` / `badRequest()` / `notFound()` จาก `lib/http.ts` ได้เลย Express 5 ส่ง error จาก async handler ไปที่ `errorHandler` ให้เอง ไม่ต้องเขียน try/catch ทุกเส้น
 
 ## Endpoint ที่ทำแล้ว
