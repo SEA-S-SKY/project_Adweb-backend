@@ -5,11 +5,10 @@ backend ของ [project_Adweb](https://github.com/SEA-S-SKY/project_Adweb) (f
 
 สัญญาของทุก endpoint อยู่ใน [API.md](https://github.com/SEA-S-SKY/project_Adweb/blob/master/API.md) ของ repo frontend ส่วนตารางฐานข้อมูลอยู่ใน [docs/er-diagram.md](https://github.com/SEA-S-SKY/project_Adweb/blob/master/docs/er-diagram.md) **ถ้าจะเปลี่ยน API ให้แก้ API.md ใน repo frontend ก่อน**
 
-ตอนนี้ทำครบทุกข้อของ **HW-5** แล้ว (config, ลูกค้า, ออเดอร์) และมี `/api/plans` (จัดเส้นทาง) `/api/jobs` (ใบงานไรเดอร์) `/api/events` (แจ้งเตือนข้ามเครื่อง) แล้ว รายละเอียดอยู่ใน [docs/PLANS_JOBS_EVENTS.md](docs/PLANS_JOBS_EVENTS.md)
+ตอนนี้ทำครบทุกข้อของ **HW-5** แล้ว (config, ลูกค้า, ออเดอร์) และมี `/api/plans` (จัดเส้นทาง) `/api/jobs` (ใบงานไรเดอร์) `/api/events` (แจ้งเตือนข้ามเครื่อง) แล้ว
 
 > [!IMPORTANT]
 > อัลกอริทึมจัดเส้นทางและการเก็บใบงานอยู่ที่ backend นี้ที่เดียว ฝั่ง frontend ไม่ต้องคำนวณเองหรือมีฐานข้อมูลของตัวเองแล้ว
-> สิ่งที่ฝั่ง frontend ต้องแก้ดูที่ [docs/FRONTEND_MIGRATION.md](docs/FRONTEND_MIGRATION.md)
 
 ## เริ่มต้นใช้งานในเครื่อง
 
@@ -64,8 +63,6 @@ project_Adweb-backend/
 ├── test/                unit test (node:test)
 └── postman/             collection สำหรับทดสอบทุกเส้น
 ```
-
-อธิบายการทำงานของแต่ละไฟล์อย่างละเอียดอยู่ใน [docs/FILES.md](docs/FILES.md)
 
 **เพิ่ม endpoint ใหม่:** throw `ApiError` / `badRequest()` / `notFound()` จาก `lib/http.ts` ได้เลย Express 5 ส่ง error จาก async handler ไปที่ `errorHandler` ให้เอง ไม่ต้องเขียน try/catch ทุกเส้น
 
