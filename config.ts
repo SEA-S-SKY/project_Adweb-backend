@@ -1,10 +1,9 @@
 // ค่าคงที่ทั้งระบบ ส่งให้ frontend ผ่าน GET /api/config — ห้ามเขียนตัวเลขเหล่านี้ตรง ๆ ที่อื่น
-// ค่าที่มี ⚠️ ยังรอทีมตกลง (ดู TASKS.md)
 
 export const config = {
   shop: {
     name: "ข้าวกล่องเดลิเวอรี ส่งด่วนมื้อเที่ยง",
-    lat: 16.2458, // ⚠️ ข้อ 2 รอทีมยืนยัน
+    lat: 16.2458,
     lng: 103.25,
   },
   pricing: {
@@ -21,7 +20,7 @@ export const config = {
     serviceRadiusKm: 3,
     departTime: "11:30",
     deadline: "12:30",
-    includeReturnTrip: false, // ⚠️ ข้อ 3 รอถามอาจารย์
+    includeReturnTrip: false,
     // ⚠️ ข้อ 4: "osrm" = ระยะตามถนนจริง (ถ้า OSRM ล่มจะถอยไปใช้ haversine เอง) · "haversine" = เส้นตรง
     distanceMethod: "osrm" as "haversine" | "osrm",
   },
