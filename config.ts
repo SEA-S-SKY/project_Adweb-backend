@@ -14,14 +14,14 @@ export const config = {
   },
   delivery: {
     riderSpeedKmh: 30,
-    stopDurationMin: 3, // ⚠️ ข้อ 5
+    stopDurationMin: 3,
     maxOrdersPerRider: 3,
     maxBoxesPerOrder: 3,
     serviceRadiusKm: 3,
     departTime: "11:30",
     deadline: "12:30",
     includeReturnTrip: false,
-    // ⚠️ ข้อ 4: "osrm" = ระยะตามถนนจริง (ถ้า OSRM ล่มจะถอยไปใช้ haversine เอง) · "haversine" = เส้นตรง
+    // "osrm" = ระยะตามถนนจริง (ถ้า OSRM ล่มจะถอยไปใช้ haversine เอง) · "haversine" = เส้นตรง
     distanceMethod: "osrm" as "haversine" | "osrm",
   },
   routing: {
